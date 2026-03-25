@@ -7,21 +7,21 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/tier-app-491210/app-repo/my-app:$SHORT_SHA']
 
-  # 3. Trigger the Rolling Update on your app-mig
+  # 3. Create a NEW Instance Template and Update the MIG
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'compute'
-      - 'instance-groups'
-      - 'managed'
-      - 'rolling-action'
-      - 'start-update'
-      - 'app-mig'
-      - '--version=template=projects/tier-app-491210/global/instanceTemplates/app-template-v2'
-      - '--container-image=us-central1-docker.pkg.dev/tier-app-491210/app-repo/my-app:$SHORT_SHA'
-      - '--zone=us-central1-c'
+      - '-c'
+      - |
+        gcloud compute instance-templates create-with-container app-template-$SHORT_SHA \
+          --container-image=us-central1-docker.pkg.dev/tier-app-491210/app-repo/my-app:$SHORT_SHA \
+          --tags=app-server \
+          --machine-type=e2-small \
+          --scopes=https://www.googleapis.com/auth/cloud-platform && \
+        gcloud compute instance-groups managed rolling-action start-update app-mig \
+          --version=template=app-template-$SHORT_SHA \
+          --zone=us-central1-c
 
-# THIS IS THE FIX:
 options:
   logging: CLOUD_LOGGING_ONLY
 
