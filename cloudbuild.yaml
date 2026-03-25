@@ -7,19 +7,19 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/tier-app-491210/app-repo/my-app:$SHORT_SHA']
 
-  # 3. Create a NEW Template and Update the MIG
+  # 3. Create a NEW Instance Template with correct Network and Update the MIG
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Print a new blueprint (Template) using the new image
         gcloud compute instance-templates create-with-container app-template-$SHORT_SHA \
           --container-image=us-central1-docker.pkg.dev/tier-app-491210/app-repo/my-app:$SHORT_SHA \
+          --network=my-app-vpc \
+          --subnet=app-subnet \
           --tags=app-server \
           --machine-type=e2-small \
           --scopes=https://www.googleapis.com/auth/cloud-platform && \
-        # Tell the group to start switching over to this new blueprint
         gcloud compute instance-groups managed rolling-action start-update app-mig \
           --version=template=app-template-$SHORT_SHA \
           --zone=us-central1-c
