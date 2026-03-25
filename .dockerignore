@@ -1,0 +1,4 @@
+gunicorn.ctl
+*.pyc
+__pycache__
+.git

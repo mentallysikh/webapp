@@ -1,0 +1,25 @@
+steps:
+  # 1. Build the Docker image with the Git commit ID (SHORT_SHA)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/app-repo/my-app:$SHORT_SHA', '.']
+
+  # 2. Push the new image to your Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/app-repo/my-app:$SHORT_SHA']
+
+  # 3. Trigger the Rolling Update on your app-mig
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'compute'
+      - 'instance-groups'
+      - 'managed'
+      - 'rolling-action'
+      - 'start-update'
+      - 'app-mig'
+      - '--version=template=projects/$PROJECT_ID/global/instanceTemplates/app-template-v2'
+      - '--container-image=us-central1-docker.pkg.dev/$PROJECT_ID/app-repo/my-app:$SHORT_SHA'
+      - '--zone=us-central1-c'
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/app-repo/my-app:$SHORT_SHA'
